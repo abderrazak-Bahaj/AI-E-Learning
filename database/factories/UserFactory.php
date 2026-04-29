@@ -14,14 +14,9 @@ use Illuminate\Support\Str;
  */
 final class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
     private static ?string $password = null;
 
     /**
-     * Define the model's default state.
-     *
      * @return array<string, mixed>
      */
     public function definition(): array
@@ -32,16 +27,48 @@ final class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => self::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'role' => 'student',
+            'status' => 'ACTIVE',
+            'avatar' => null,
+            'phone' => fake()->optional()->phoneNumber(),
+            'address' => fake()->optional()->address(),
+            'bio' => fake()->optional()->sentence(),
+            'last_login_at' => fake()->optional()->dateTimeThisYear(),
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
     public function unverified(): static
     {
         return $this->state(fn (array $attributes): array => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'role' => 'admin',
+        ]);
+    }
+
+    public function teacher(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'role' => 'teacher',
+        ]);
+    }
+
+    public function student(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'role' => 'student',
+        ]);
+    }
+
+    public function suspended(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => 'SUSPENDED',
         ]);
     }
 }

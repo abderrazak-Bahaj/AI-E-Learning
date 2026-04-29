@@ -4,50 +4,47 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\Comment;
-use App\Models\Post;
+use App\Models\Category;
+use App\Models\Course;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Database\Factories\CategoryFactory;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 final class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     public function run(): void
     {
-        // Admin / demo user with known credentials
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@example.com'],
-            [
-                'name' => 'Admin User',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]
-        );
+        // 1. Users (admin, teachers, students)
+        if (User::count() === 0) {
+            $this->call(UserSeeder::class);
+        } else {
+            $this->command->info('Users already exist — skipping UserSeeder.');
+        }
 
-        // 9 random users, each with posts and comments
-        $users = User::factory(9)->create([
-            'email_verified_at' => now(),
-        ]);
+        // 2. Categories
+        if (Category::count() === 0) {
+            CategoryFactory::new()->createPredefined();
+            $this->command->info('Seeded: 12 categories');
+        } else {
+            $this->command->info('Categories already exist — skipping.');
+        }
 
-        $allUsers = $users->prepend($admin);
+        // 3. Courses + lessons + resources + assignments
+        if (Course::count() === 0) {
+            $this->call(CourseSeeder::class);
+        } else {
+            $this->command->info('Courses already exist — skipping CourseSeeder.');
+        }
 
-        // Each user gets 3 posts
-        $allUsers->each(function (User $user) use ($allUsers): void {
-            Post::factory(3)
-                ->for($user)
-                ->create()
-                ->each(function (Post $post) use ($allUsers): void {
-                    // Each post gets 5 comments from random users
-                    Comment::factory(5)
-                        ->for($post)
-                        ->for($allUsers->random())
-                        ->create();
-                });
-        });
+        // 4. Enrollments + lesson progress + certificates
+        $this->call(EnrollmentSeeder::class);
 
-        $this->command->info('Seeded: 10 users, 30 posts, 150 comments');
+        // 5. Invoices + payments
+        $this->call(PaymentSeeder::class);
+
+        // 6. Submissions + answers
+        $this->call(SubmissionSeeder::class);
+
+        $this->command->info('Database seeding complete.');
     }
 }

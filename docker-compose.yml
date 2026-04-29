@@ -11,7 +11,7 @@ services:
     networks:
       - laravel
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -29,22 +29,21 @@ services:
     depends_on:
       - app
 
-  mysql:
-    image: mysql:8.0
-    container_name: laravel-api-kit-mysql
+  postgres:
+    image: postgres:16-alpine
+    container_name: laravel-api-kit-postgres
     environment:
-      MYSQL_DATABASE: ${DB_DATABASE:-laravel}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
-      MYSQL_USER: ${DB_USERNAME:-laravel}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      POSTGRES_DB: ${DB_DATABASE:-laravel}
+      POSTGRES_USER: ${DB_USERNAME:-laravel}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
     ports:
-      - "${DB_PORT_FORWARD:-3306}:3306"
+      - "${DB_PORT_FORWARD:-5432}:5432"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
     networks:
       - laravel
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-secret}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-laravel}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -55,11 +54,11 @@ services:
     ports:
       - "${ADMINER_PORT:-8080}:8080"
     environment:
-      ADMINER_DEFAULT_SERVER: mysql
+      ADMINER_DEFAULT_SERVER: postgres
     networks:
       - laravel
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
 
   mailhog:
@@ -90,5 +89,5 @@ networks:
     driver: bridge
 
 volumes:
-  mysql-data:
+  postgres-data:
   redis-data:
