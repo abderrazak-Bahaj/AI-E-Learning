@@ -38,6 +38,7 @@ final class Assignment extends Model
 
     /** @use HasFactory<AssignmentFactory> */
     use HasFactory;
+
     use HasUuid;
     use Publishable;
     use SoftDeletes;

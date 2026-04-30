@@ -13,10 +13,10 @@ uses(RefreshDatabase::class);
 
 describe('Email Verification', function (): void {
     it('verifies email successfully with valid link', function (): void {
-        Event::fake();
-
         $user = User::factory()->create(['email_verified_at' => null]);
         Passport::actingAs($user);
+
+        Event::fake();
 
         $verificationUrl = URL::temporarySignedRoute(
             'verification.verify',

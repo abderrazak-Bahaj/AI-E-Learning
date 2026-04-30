@@ -48,6 +48,13 @@ final class CourseFactory extends Factory
         ]);
     }
 
+    public function published(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => 'PUBLISHED',
+        ]);
+    }
+
     public function archived(): static
     {
         return $this->state(fn (array $attributes): array => [

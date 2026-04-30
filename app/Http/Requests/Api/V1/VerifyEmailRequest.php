@@ -10,8 +10,8 @@ final class VerifyEmailRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Allow if user is authenticated and the ID matches
-        return $this->user() && (int) $this->route('id') === $this->user()->id;
+        // UUID comparison — do NOT cast to int
+        return $this->user() && (string) $this->route('id') === (string) $this->user()->id;
     }
 
     /**

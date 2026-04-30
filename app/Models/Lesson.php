@@ -36,6 +36,7 @@ final class Lesson extends Model
 
     /** @use HasFactory<LessonFactory> */
     use HasFactory;
+
     use HasUuid;
     use Publishable;
     use SoftDeletes;

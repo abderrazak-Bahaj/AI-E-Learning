@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Ai\Agents\AssignmentGeneratorAgent;
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Requests\Api\V1\StoreAssignmentRequest;
 use App\Http\Requests\Api\V1\StoreQuestionRequest;
@@ -15,6 +16,8 @@ use App\Models\AssignmentOption;
 use App\Models\AssignmentQuestion;
 use App\Models\Course;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Throwable;
 
 final class AssignmentController extends ApiController
 {
@@ -91,5 +94,46 @@ final class AssignmentController extends ApiController
         $question->delete();
 
         return $this->noContent();
+    }
+
+    /**
+     * AI-generated assignment draft for the teacher to review.
+     * Does NOT save — teacher calls store() to confirm.
+     *
+     * POST /courses/{course}/assignments/generate
+     */
+    public function generate(Request $request, Course $course): JsonResponse
+    {
+        $this->authorize('create', Assignment::class);
+
+        $request->validate([
+            'type' => ['required', 'in:QUIZ,ESSAY,MULTIPLE_CHOICE,TRUE_FALSE'],
+            'question_count' => ['nullable', 'integer', 'min:1', 'max:20'],
+        ]);
+
+        try {
+            $agent = new AssignmentGeneratorAgent(
+                course: $course,
+                type: $request->string('type')->toString(),
+                questionCount: $request->integer('question_count', 5),
+            );
+
+            $result = $agent->prompt($agent->buildPrompt());
+
+            return $this->success([
+                'draft' => [
+                    'title' => $result['title'],
+                    'description' => $result['description'],
+                    'type' => $request->string('type')->toString(),
+                    'passing_score' => $result['passing_score'],
+                    'total_points' => collect($result['questions'])->sum('points'),
+                    'questions' => $result['questions'],
+                ],
+                'note' => 'Review and edit this draft, then call POST /assignments to save it.',
+            ], 'Assignment draft generated successfully.');
+
+        } catch (Throwable $e) {
+            return $this->error('AI service is temporarily unavailable. Please try again later.', 503);
+        }
     }
 }

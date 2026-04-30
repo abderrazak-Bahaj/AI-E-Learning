@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Ai\Agents\EssayGraderAgent;
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Requests\Api\V1\GradeSubmissionRequest;
 use App\Http\Requests\Api\V1\StoreSubmissionRequest;
@@ -14,6 +15,7 @@ use App\Models\Submission;
 use App\Models\SubmissionAnswer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Throwable;
 
 final class SubmissionController extends ApiController
 {
@@ -92,6 +94,67 @@ final class SubmissionController extends ApiController
         }
 
         return $this->success(new SubmissionResource($submission->fresh()), 'Submission graded');
+    }
+
+    /**
+     * AI pre-grading for essay submissions.
+     * Returns a score suggestion — does NOT save. Teacher must confirm via grade().
+     *
+     * POST /courses/{course}/assignments/{assignment}/submissions/{submission}/pre-grade
+     */
+    public function preGrade(Course $course, Assignment $assignment, Submission $submission): JsonResponse
+    {
+        $this->authorize('grade', $submission);
+
+        // Only essay-type assignments make sense for AI pre-grading
+        if (! in_array($assignment->type, ['ESSAY', 'QUIZ'], true)) {
+            return $this->error('AI pre-grading is only available for essay and quiz assignments.', 422);
+        }
+
+        // Collect essay answers from the submission
+        $submission->loadMissing('answers.question');
+        $essayAnswers = $submission->answers
+            ->filter(fn ($a) => in_array($a->question?->question_type, ['ESSAY', 'SHORT_ANSWER'], true))
+            ->values();
+
+        if ($essayAnswers->isEmpty()) {
+            return $this->error('No essay answers found in this submission to pre-grade.', 422);
+        }
+
+        try {
+            $suggestions = [];
+
+            foreach ($essayAnswers as $answer) {
+                $agent = new EssayGraderAgent(
+                    question: $answer->question->question_text,
+                    answer: $answer->answer ?? '',
+                    maxPoints: $answer->question->points,
+                );
+
+                $result = $agent->prompt($agent->buildPrompt());
+
+                $suggestions[] = [
+                    'answer_id' => $answer->id,
+                    'question_id' => $answer->question_id,
+                    'question_text' => $answer->question->question_text,
+                    'suggested_score' => $result['score'],
+                    'feedback' => $result['feedback'],
+                    'confidence' => $result['confidence'],
+                    'strengths' => $result['strengths'] ?? [],
+                    'improvements' => $result['improvements'] ?? [],
+                    'max_points' => $answer->question->points,
+                ];
+            }
+
+            return $this->success([
+                'submission_id' => $submission->id,
+                'suggestions' => $suggestions,
+                'note' => 'These are AI suggestions only. Use the grade endpoint to confirm or override.',
+            ], 'AI pre-grading complete.');
+
+        } catch (Throwable $e) {
+            return $this->error('AI grading service is temporarily unavailable.', 503);
+        }
     }
 
     private function autoGrade(Submission $submission): void

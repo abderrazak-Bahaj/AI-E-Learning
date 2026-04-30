@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Contracts\PaypalServiceInterface;
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Requests\Api\V1\CaptureOrderRequest;
 use App\Http\Requests\Api\V1\CreateOrderRequest;
@@ -14,7 +15,8 @@ use App\Models\Enrollment;
 use App\Models\Invoice;
 use App\Models\LessonProgress;
 use App\Models\Payment;
-use App\Services\PaypalService;
+use App\Notifications\EnrollmentConfirmed;
+use App\Notifications\PaymentSuccessful;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +26,7 @@ use Throwable;
 
 final class PaymentController extends ApiController
 {
-    public function __construct(private readonly PaypalService $paypal) {}
+    public function __construct(private readonly PaypalServiceInterface $paypal) {}
 
     // ── List user payments ─────────────────────────────────────────────────────
 
@@ -183,6 +185,9 @@ final class PaymentController extends ApiController
 
             DB::commit();
 
+            // Notify after commit (queued — won't block the response)
+            $invoice->user->notify(new PaymentSuccessful($invoice->fresh('courses')));
+
             return $this->success([
                 'payment' => new PaymentResource($payment->load('course', 'invoice')),
                 'invoice' => new InvoiceResource($invoice->fresh('courses')),
@@ -272,6 +277,9 @@ final class PaymentController extends ApiController
         if (! $enrollment->wasRecentlyCreated) {
             return;
         }
+
+        // Notify the student of their new enrollment (queued)
+        $enrollment->student->notify(new EnrollmentConfirmed($enrollment->load('course')));
 
         // Initialise NOT_STARTED progress for every lesson
         $course->loadMissing('lessons');

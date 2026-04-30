@@ -47,6 +47,8 @@ final class EnrollmentController extends ApiController
             'progress' => 0,
         ]);
 
+        $request->user()->notify(new \App\Notifications\EnrollmentConfirmed($enrollment->load('course')));
+
         return $this->created(
             new EnrollmentResource($enrollment->load('course')),
             'Enrolled successfully'

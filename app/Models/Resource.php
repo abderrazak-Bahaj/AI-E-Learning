@@ -33,6 +33,7 @@ final class Resource extends Model
 
     /** @use HasFactory<ResourceFactory> */
     use HasFactory;
+
     use HasUuid;
     use SoftDeletes;
 

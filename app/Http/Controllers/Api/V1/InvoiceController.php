@@ -9,6 +9,8 @@ use App\Http\Resources\InvoiceResource;
 use App\Models\Invoice;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\LaravelPdf\Facades\Pdf;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class InvoiceController extends ApiController
 {
@@ -31,5 +33,21 @@ final class InvoiceController extends ApiController
         $invoice->load('courses', 'payments', 'user');
 
         return $this->success(new InvoiceResource($invoice));
+    }
+
+    /**
+     * Return the invoice as an inline PDF.
+     */
+    public function print(Invoice $invoice): StreamedResponse|JsonResponse
+    {
+        $this->authorize('view', $invoice);
+
+        $invoice->loadMissing(['courses', 'user']);
+
+        $filename = "invoice-{$invoice->invoice_number}.pdf";
+
+        return Pdf::view('pdfs.invoice', ['invoice' => $invoice])
+            ->format('a4')
+            ->name($filename);
     }
 }

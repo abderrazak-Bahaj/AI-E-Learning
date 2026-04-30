@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Contracts\PaypalServiceInterface;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -15,7 +16,7 @@ use RuntimeException;
  * Credentials are read from config/services.php → paypal.
  * Access tokens are cached for their TTL to avoid redundant auth calls.
  */
-final class PaypalService
+final class PaypalService implements PaypalServiceInterface
 {
     private readonly string $baseUrl;
 

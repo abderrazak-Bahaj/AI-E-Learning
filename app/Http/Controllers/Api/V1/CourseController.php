@@ -16,21 +16,20 @@ final class CourseController extends ApiController
 {
     public function index(Request $request): JsonResponse
     {
-        $search = $request->string('search')->toString();
-
-        $courses = Course::query()
-            ->published()
-            ->with('category', 'teacher')
-            ->withCount('lessons', 'enrollments')
-            ->when($request->filled('category'), fn ($q) => $q->whereHas(
-                'category', fn ($q) => $q->where('slug', $request->category)
-            ))
-            ->when($request->filled('level'), fn ($q) => $q->byLevel($request->level))
-            ->when($search !== '', fn ($q) => $q->where('title', 'like', "%{$search}%"))
-            ->latest()
-            ->paginate(15);
-
-        return $this->success(CourseResource::collection($courses));
+        return $this->paginatedResponse(
+            query: Course::query()
+                ->published()
+                ->with('category', 'teacher')
+                ->withCount('lessons', 'enrollments')
+                ->when($request->filled('category'), fn ($q) => $q->whereHas(
+                    'category', fn ($q) => $q->where('slug', $request->category)
+                )),
+            request: $request,
+            resourceClass: CourseResource::class,
+            searchColumns: ['title', 'description'],
+            allowedSorts: ['title', 'price', 'created_at', 'duration'],
+            allowedFilters: ['status', 'level', 'category_id', 'language'],
+        );
     }
 
     public function store(StoreCourseRequest $request): JsonResponse
