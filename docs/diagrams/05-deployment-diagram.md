@@ -1,4 +1,4 @@
-# E-Learning API - Deployment Diagram
+# Laravel API Kit - Deployment Diagram
 
 ## Production Deployment Architecture
 
@@ -20,9 +20,9 @@ graph TB
     end
 
     subgraph AppServers["Application Servers"]
-        App1["Laravel App<br/>Instance 1"]
-        App2["Laravel App<br/>Instance 2"]
-        App3["Laravel App<br/>Instance 3"]
+        App1["Laravel App V1<br/>Instance 1"]
+        App2["Laravel App V1<br/>Instance 2"]
+        App3["Laravel App V1<br/>Instance 3"]
     end
 
     subgraph Cache["Caching Layer"]
@@ -44,6 +44,11 @@ graph TB
     subgraph Storage["File Storage"]
         LocalStorage["💾 Local Storage<br/>Certificates, Invoices"]
         S3Storage["☁️ AWS S3<br/>Course Resources"]
+    end
+
+    subgraph AI["AI Services"]
+        AIService["🤖 AI Service<br/>Content Generation"]
+        AICache["💾 AI Cache<br/>Embeddings"]
     end
 
     subgraph Email["Email Service"]
@@ -101,6 +106,11 @@ graph TB
     App2 --> S3Storage
     App3 --> S3Storage
 
+    App1 --> AIService
+    App2 --> AIService
+    App3 --> AIService
+    AIService --> AICache
+
     App1 --> Brevo
     App2 --> Brevo
     App3 --> Brevo
@@ -123,13 +133,14 @@ graph TB
     style Database fill:#ede7f6
     style Queue fill:#f1f8e9
     style Storage fill:#fff9c4
+    style AI fill:#f0f4c3
     style Email fill:#e0f2f1
     style Payment fill:#fbe9e7
     style Monitoring fill:#f5f5f5
     style Security fill:#ffebee
 ```
 
-## Docker Containerized Deployment
+## Docker Containerized Deployment with API Versioning
 
 ```mermaid
 graph TB
@@ -140,6 +151,7 @@ graph TB
             PostgreSQL["🐳 PostgreSQL Container<br/>Database"]
             Redis["🐳 Redis Container<br/>Cache"]
             Queue["🐳 Queue Worker<br/>Job Processing"]
+            AI["🐳 AI Service<br/>Optional"]
         end
 
         subgraph Volumes["Persistent Volumes"]
@@ -169,6 +181,11 @@ graph TB
         Registry2["📦 Container Registry<br/>Push Images"]
     end
 
+    subgraph APIVersioning["API Versioning"]
+        V1["API V1<br/>Stable"]
+        V2["API V2<br/>Development"]
+    end
+
     Laravel --> AppCode
     Laravel --> DockerNet
     Nginx --> DockerNet
@@ -178,6 +195,7 @@ graph TB
     Redis --> DockerNet
     Queue --> DockerNet
     Queue --> Logs
+    AI --> DockerNet
 
     DockerCompose --> Containers
     Kubernetes --> Containers
@@ -187,6 +205,9 @@ graph TB
     Registry2 --> DockerHub
     DockerHub --> Kubernetes
 
+    Nginx --> V1
+    Nginx --> V2
+
     style Docker fill:#e3f2fd
     style Containers fill:#bbdefb
     style Volumes fill:#90caf9
@@ -194,6 +215,7 @@ graph TB
     style Registry fill:#42a5f5
     style Orchestration fill:#2196f3
     style CI_CD fill:#1976d2
+    style APIVersioning fill:#1565c0
 ```
 
 ## Development Environment Setup
@@ -212,6 +234,7 @@ graph TB
         ViteDev["⚡ Vite Dev Server<br/>npm run dev"]
         PostgreSQLDev["🗄️ PostgreSQL<br/>Docker Container"]
         RedisDev["🔴 Redis<br/>Docker Container"]
+        AIDev["🤖 AI Service<br/>Optional Docker"]
     end
 
     subgraph Tools["Development Tools"]
@@ -219,6 +242,7 @@ graph TB
         Pest["🧪 Pest<br/>Testing Framework"]
         Pail["📊 Laravel Pail<br/>Log Viewer"]
         Tinker["🔧 Tinker<br/>REPL"]
+        Rector["🔄 Rector<br/>Code Refactoring"]
     end
 
     subgraph Testing["Testing"]
@@ -227,42 +251,55 @@ graph TB
         Coverage["📈 Code Coverage"]
     end
 
+    subgraph Documentation["Documentation"]
+        Scramble["📚 Scramble<br/>API Documentation"]
+        OpenAPI["📖 OpenAPI/Swagger<br/>API Spec"]
+    end
+
     Code --> Composer
     Code --> NPM
     Composer --> LaravelDev
     NPM --> ViteDev
     Docker --> PostgreSQLDev
     Docker --> RedisDev
+    Docker --> AIDev
 
     LaravelDev --> PostgreSQLDev
     LaravelDev --> RedisDev
+    LaravelDev --> AIDev
     ViteDev --> LaravelDev
 
     LaravelDev --> Pint
     LaravelDev --> Pest
     LaravelDev --> Pail
     LaravelDev --> Tinker
+    LaravelDev --> Rector
 
     Pest --> UnitTests
     Pest --> FeatureTests
     UnitTests --> Coverage
     FeatureTests --> Coverage
 
+    LaravelDev --> Scramble
+    Scramble --> OpenAPI
+
     style Local fill:#c8e6c9
     style Services fill:#a5d6a7
     style Tools fill:#81c784
     style Testing fill:#66bb6a
+    style Documentation fill:#4caf50
 ```
 
-## Coolify Deployment Architecture
+## Coolify Deployment with API Versioning
 
 ```mermaid
 graph TB
     subgraph Coolify["Coolify Platform"]
         subgraph Project["Project"]
-            Service["🚀 Laravel Service"]
+            Service["🚀 Laravel Service<br/>API V1 & V2"]
             Database["🗄️ PostgreSQL Service"]
             Redis["🔴 Redis Service"]
+            AI["🤖 AI Service<br/>Optional"]
         end
 
         subgraph Monitoring["Built-in Monitoring"]
@@ -294,8 +331,14 @@ graph TB
         AutoDeploy["⚡ Auto Deploy"]
     end
 
+    subgraph APIVersioning["API Versioning"]
+        V1Route["📍 /api/v1<br/>Stable"]
+        V2Route["📍 /api/v2<br/>Development"]
+    end
+
     Service --> Database
     Service --> Redis
+    Service --> AI
     Service --> Logs
     Service --> Stats
     Service --> Alerts
@@ -306,6 +349,7 @@ graph TB
     Service --> Server
     Database --> Server
     Redis --> Server
+    AI --> Server
     Server --> Storage
     Server --> Network
 
@@ -316,6 +360,9 @@ graph TB
     Webhook --> AutoDeploy
     AutoDeploy --> Service
 
+    Service --> V1Route
+    Service --> V2Route
+
     style Coolify fill:#e1bee7
     style Project fill:#ce93d8
     style Monitoring fill:#ba68c8
@@ -323,4 +370,5 @@ graph TB
     style Infrastructure fill:#9c27b0
     style Domain fill:#8e24aa
     style Deployment fill:#7b1fa2
+    style APIVersioning fill:#6a1b9a
 ```

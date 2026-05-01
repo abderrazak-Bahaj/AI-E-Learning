@@ -1,4 +1,4 @@
-# E-Learning API - Activity Diagram
+# Laravel API Kit - Activity Diagram
 
 ## Student Course Enrollment and Learning Flow
 
@@ -14,7 +14,7 @@ graph TD
     ViewCourse --> CheckPrice{Course<br/>Paid?}
     CheckPrice -->|Free| Enroll["Enroll in Course"]
     CheckPrice -->|Paid| Payment["Proceed to Payment"]
-    Payment --> ProcessPayment["Process Payment via PayPal"]
+    Payment --> ProcessPayment["Process Payment"]
     ProcessPayment --> PaymentSuccess{Payment<br/>Successful?}
     PaymentSuccess -->|No| PaymentFailed["Payment Failed"]
     PaymentFailed --> ViewCourse
@@ -31,7 +31,8 @@ graph TD
     UpdateProgress --> CheckAssignment{Assignment<br/>Available?}
 
     CheckAssignment -->|Yes| ViewAssignment["View Assignment"]
-    ViewAssignment --> SubmitAssignment["Submit Assignment"]
+    ViewAssignment --> StartAssignment["Start Assignment<br/>Record Start Time"]
+    StartAssignment --> SubmitAssignment["Submit Assignment"]
     SubmitAssignment --> CreateSubmission["Create Submission Record"]
     CreateSubmission --> NotifyTeacher["Notify Teacher"]
     NotifyTeacher --> WaitGrading["Wait for Grading"]
@@ -55,7 +56,7 @@ graph TD
     UpdateEnrollment --> End2([Course Completed Successfully])
 ```
 
-## Teacher Course Creation and Grading Flow
+## Teacher Course Creation with AI Assistance
 
 ```mermaid
 graph TD
@@ -68,7 +69,15 @@ graph TD
     SaveCourse --> AddLessons["Add Lessons to Course"]
     AddLessons --> CreateLesson["Create Lesson"]
     CreateLesson --> AddLessonContent["Add Lesson Content"]
-    AddLessonContent --> AddResources{Add<br/>Resources?}
+
+    AddLessonContent --> UseAI{Use AI<br/>Assistance?}
+    UseAI -->|Yes| AIGenerate["AI Generate Content<br/>Based on Topic"]
+    AIGenerate --> ReviewContent["Review AI Content"]
+    ReviewContent --> EditContent["Edit/Refine Content"]
+    EditContent --> SaveLesson
+    UseAI -->|No| SaveLesson["Save Lesson"]
+
+    SaveLesson --> AddResources{Add<br/>Resources?}
     AddResources -->|Yes| UploadResource["Upload Resource<br/>PDF, Video, etc"]
     UploadResource --> MoreResources{More<br/>Resources?}
     MoreResources -->|Yes| UploadResource
@@ -78,16 +87,18 @@ graph TD
     MoreLessons -->|No| AddAssignments["Add Assignments"]
 
     AddAssignments --> CreateAssignment["Create Assignment"]
-    CreateAssignment --> AddQuestions["Add Questions"]
-    AddQuestions --> CreateQuestion["Create Question<br/>Multiple Choice/Essay"]
-    CreateQuestion --> AddOptions{Add<br/>Options?}
-    AddOptions -->|Yes| AddOption["Add Answer Option"]
-    AddOption --> MoreOptions{More<br/>Options?}
-    MoreOptions -->|Yes| AddOption
-    MoreOptions -->|No| MoreQuestions
-    AddOptions -->|No| MoreQuestions{More<br/>Questions?}
-    MoreQuestions -->|Yes| CreateQuestion
-    MoreQuestions -->|No| MoreAssignments{More<br/>Assignments?}
+    CreateAssignment --> SetTimeLimit["Set Time Limit<br/>Optional"]
+    SetTimeLimit --> AddQuestions["Add Questions"]
+
+    AddQuestions --> UseAIQuestions{Use AI to<br/>Generate?}
+    UseAIQuestions -->|Yes| AIGenerateQuestions["AI Generate Questions<br/>Based on Content"]
+    AIGenerateQuestions --> ReviewQuestions["Review Questions"]
+    ReviewQuestions --> EditQuestions["Edit Questions"]
+    EditQuestions --> SaveQuestions
+    UseAIQuestions -->|No| CreateQuestion["Create Question Manually"]
+    CreateQuestion --> SaveQuestions["Save Questions"]
+
+    SaveQuestions --> MoreAssignments{More<br/>Assignments?}
     MoreAssignments -->|Yes| CreateAssignment
     MoreAssignments -->|No| PublishCourse["Publish Course"]
 
@@ -95,8 +106,14 @@ graph TD
     WaitEnrollments --> CheckSubmissions{Student<br/>Submissions?}
     CheckSubmissions -->|No| WaitEnrollments
     CheckSubmissions -->|Yes| ViewSubmission["View Student Submission"]
-    ViewSubmission --> GradeSubmission["Grade Submission"]
-    GradeSubmission --> ProvideFeedback["Provide Feedback"]
+    ViewSubmission --> UseAutoGrade{Use AI<br/>Auto-Grade?}
+    UseAutoGrade -->|Yes| AIGrade["AI Auto-Grade<br/>Submission"]
+    AIGrade --> ReviewGrade["Review AI Grade"]
+    ReviewGrade --> AdjustGrade["Adjust if Needed"]
+    AdjustGrade --> ProvideFeedback
+    UseAutoGrade -->|No| ManualGrade["Grade Manually"]
+    ManualGrade --> ProvideFeedback["Provide Feedback"]
+
     ProvideFeedback --> SaveGrade["Save Grade & Feedback"]
     SaveGrade --> NotifyStudent["Notify Student"]
     NotifyStudent --> MoreSubmissions{More<br/>Submissions?}
@@ -122,9 +139,11 @@ graph TD
     UserAction -->|Activate| ActivateUser["Activate User"]
     UserAction -->|Suspend| SuspendUser["Suspend User"]
     UserAction -->|Delete| DeleteUser["Delete User"]
+    UserAction -->|Assign Role| AssignRole["Assign Role/Permissions"]
     ActivateUser --> UpdateUserStatus["Update User Status"]
     SuspendUser --> UpdateUserStatus
     DeleteUser --> UpdateUserStatus
+    AssignRole --> UpdateUserStatus
 
     ViewCourses --> ManageCategories["Manage Categories"]
     ManageCategories --> CategoryAction{Category<br/>Action}
@@ -147,4 +166,32 @@ graph TD
     UpdateUserStatus --> End
     SaveCategory --> End
     UpdatePaymentStatus --> End
+```
+
+## API Versioning and Request Flow
+
+```mermaid
+graph TD
+    Client["Client Application"]
+    Client -->|Request| Router["API Router"]
+    Router -->|V1| V1["API V1 Endpoints"]
+    Router -->|V2| V2["API V2 Endpoints"]
+
+    V1 --> Auth["Authentication<br/>Passport"]
+    Auth -->|Valid Token| CheckPerm["Check Permissions<br/>Role-Based"]
+    CheckPerm -->|Authorized| Controller["Route to Controller"]
+    CheckPerm -->|Denied| Forbidden["403 Forbidden"]
+
+    Controller --> Service["Business Logic<br/>Service Layer"]
+    Service --> Model["Eloquent Model"]
+    Model --> DB["Database"]
+
+    DB -->|Data| Model
+    Model -->|Transform| Resource["API Resource<br/>Response Formatter"]
+    Resource -->|JSON| Response["Return Response"]
+    Response -->|Success| Client
+
+    Forbidden -->|Error| Client
+    Service -->|Exception| ErrorHandler["Error Handler"]
+    ErrorHandler -->|Error Response| Client
 ```

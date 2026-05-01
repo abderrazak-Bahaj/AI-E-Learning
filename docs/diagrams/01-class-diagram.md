@@ -1,4 +1,4 @@
-# E-Learning API - Class Diagram
+# Laravel API Kit - Class Diagram
 
 ```mermaid
 classDiagram
@@ -7,7 +7,6 @@ classDiagram
         -name: string
         -email: string
         -password: string
-        -role: enum[ADMIN, TEACHER, STUDENT]
         -avatar: string
         -phone: string
         -bio: string
@@ -18,6 +17,20 @@ classDiagram
         +isAdmin(): bool
         +isTeacher(): bool
         +isStudent(): bool
+    }
+
+    class Role {
+        -id: UUID
+        -name: string
+        -description: string
+        -permissions: Collection
+    }
+
+    class Permission {
+        -id: UUID
+        -name: string
+        -description: string
+        -guard_name: string
     }
 
     class Admin {
@@ -50,7 +63,15 @@ classDiagram
         -status: enum[DRAFT, PUBLISHED, ARCHIVED]
         -level: enum[BEGINNER, INTERMEDIATE, ADVANCED]
         -duration_hours: int
+        -language: string
         -created_at: datetime
+    }
+
+    class CourseTeacher {
+        -id: UUID
+        -course_id: UUID
+        -teacher_id: UUID
+        -role: enum[PRIMARY, ASSISTANT]
     }
 
     class Category {
@@ -75,7 +96,7 @@ classDiagram
         -id: UUID
         -lesson_id: UUID
         -title: string
-        -type: enum[PDF, VIDEO, DOCUMENT]
+        -type: enum[PDF, VIDEO, DOCUMENT, LINK]
         -url: string
         -file_size: int
     }
@@ -110,6 +131,14 @@ classDiagram
         -assignment_question_id: UUID
         -text: string
         -is_correct: bool
+    }
+
+    class AssignmentStart {
+        -id: UUID
+        -assignment_id: UUID
+        -student_id: UUID
+        -started_at: datetime
+        -time_limit_minutes: int
     }
 
     class Enrollment {
@@ -178,18 +207,11 @@ classDiagram
         -due_date: datetime
     }
 
-    class InvoiceItem {
-        -id: UUID
-        -invoice_id: UUID
-        -course_id: UUID
-        -quantity: int
-        -unit_price: decimal
-        -total_price: decimal
-    }
-
     User "1" --> "0..1" Admin : has
     User "1" --> "0..1" Teacher : has
     User "1" --> "0..1" Student : has
+    User "*" --> "*" Role : has_roles
+    User "*" --> "*" Permission : has_permissions
     User "1" --> "*" Course : creates
     User "1" --> "*" Submission : submits
     User "1" --> "*" Enrollment : enrolls
@@ -197,19 +219,27 @@ classDiagram
     User "1" --> "*" Payment : makes
     User "1" --> "*" Invoice : receives
 
+    Role "*" --> "*" Permission : has_permissions
+
     Teacher "1" --> "*" Course : teaches
+    Teacher "1" --> "*" CourseTeacher : assigned_to
+
     Student "1" --> "*" Enrollment : has
     Student "1" --> "*" Submission : submits
     Student "1" --> "*" LessonProgress : tracks
     Student "1" --> "*" Certificate : earns
+    Student "1" --> "*" AssignmentStart : starts
 
     Course "1" --> "*" Lesson : contains
     Course "1" --> "*" Assignment : has
     Course "1" --> "*" Enrollment : enrolled_in
     Course "1" --> "*" Certificate : awarded_for
-    Course "1" --> "*" InvoiceItem : billed_in
+    Course "1" --> "*" Payment : billed_for
     Course "*" --> "1" Category : belongs_to
-    Course "*" --> "1" Teacher : taught_by
+    Course "1" --> "*" CourseTeacher : taught_by
+
+    CourseTeacher "*" --> "1" Course : assigned_to
+    CourseTeacher "*" --> "1" Teacher : teaches
 
     Category "1" --> "*" Category : has_children
     Category "1" --> "*" Course : categorizes
@@ -219,9 +249,13 @@ classDiagram
 
     Assignment "1" --> "*" AssignmentQuestion : contains
     Assignment "1" --> "*" Submission : has
+    Assignment "1" --> "*" AssignmentStart : started_for
 
     AssignmentQuestion "1" --> "1" Question : references
     AssignmentQuestion "1" --> "*" AssignmentOption : has
+
+    AssignmentStart "*" --> "1" Assignment : for_assignment
+    AssignmentStart "*" --> "1" Student : started_by
 
     Submission "1" --> "*" SubmissionAnswer : contains
     Submission "*" --> "1" Assignment : submitted_for
@@ -241,8 +275,6 @@ classDiagram
     Payment "*" --> "1" Course : for_course
     Payment "*" --> "1" Invoice : recorded_in
 
-    Invoice "1" --> "*" InvoiceItem : contains
+    Invoice "1" --> "*" Payment : contains
     Invoice "*" --> "1" User : issued_to
-
-    InvoiceItem "*" --> "1" Course : for_course
 ```

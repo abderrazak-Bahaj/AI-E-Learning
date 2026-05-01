@@ -1,4 +1,4 @@
-# E-Learning API - Use Case Diagram
+# Laravel API Kit - Use Case Diagram
 
 ```mermaid
 graph TB
@@ -7,6 +7,7 @@ graph TB
         Teacher["👨‍🏫 Teacher"]
         Student["👨‍🎓 Student"]
         System["🔧 System"]
+        AI["🤖 AI Assistant"]
     end
 
     subgraph Authentication
@@ -14,6 +15,14 @@ graph TB
         Login["Login"]
         ResetPassword["Reset Password"]
         VerifyEmail["Verify Email"]
+        Logout["Logout"]
+    end
+
+    subgraph RolePermission
+        ManageRoles["Manage Roles"]
+        ManagePermissions["Manage Permissions"]
+        AssignRoles["Assign Roles to Users"]
+        CheckPermissions["Check Permissions"]
     end
 
     subgraph CourseManagement
@@ -24,6 +33,7 @@ graph TB
         ViewCourses["View Courses"]
         SearchCourses["Search Courses"]
         FilterByCategory["Filter by Category"]
+        AssignTeachers["Assign Multiple Teachers"]
     end
 
     subgraph LessonManagement
@@ -40,6 +50,7 @@ graph TB
         DeleteAssignment["Delete Assignment"]
         CreateQuestions["Create Questions"]
         ViewAssignments["View Assignments"]
+        SetTimeLimit["Set Time Limit"]
     end
 
     subgraph StudentEnrollment
@@ -55,6 +66,7 @@ graph TB
         SubmitAssignment["Submit Assignment"]
         ViewSubmissions["View Submissions"]
         ViewFeedback["View Feedback"]
+        StartAssignment["Start Assignment"]
     end
 
     subgraph GradingAndFeedback
@@ -81,6 +93,14 @@ graph TB
         ManageCategories["Manage Categories"]
         ViewAnalytics["View Analytics"]
         ManagePayments["Manage Payments"]
+        SuspendUser["Suspend/Activate User"]
+    end
+
+    subgraph AIFeatures
+        GenerateContent["Generate Course Content"]
+        SuggestImprovements["Suggest Course Improvements"]
+        AutoGrade["Auto-Grade Assignments"]
+        GenerateQuestions["Generate Questions"]
     end
 
     Admin --> ManageUsers
@@ -88,6 +108,9 @@ graph TB
     Admin --> ViewAnalytics
     Admin --> ManagePayments
     Admin --> ProcessPayment
+    Admin --> ManageRoles
+    Admin --> ManagePermissions
+    Admin --> SuspendUser
 
     Teacher --> CreateCourse
     Teacher --> EditCourse
@@ -99,14 +122,17 @@ graph TB
     Teacher --> CreateAssignment
     Teacher --> EditAssignment
     Teacher --> CreateQuestions
+    Teacher --> SetTimeLimit
     Teacher --> GradeSubmission
     Teacher --> ProvideFeedback
     Teacher --> ViewSubmissions
+    Teacher --> AssignTeachers
 
     Student --> Register
     Student --> Login
     Student --> ResetPassword
     Student --> VerifyEmail
+    Student --> Logout
     Student --> SearchCourses
     Student --> FilterByCategory
     Student --> ViewCourses
@@ -116,6 +142,7 @@ graph TB
     Student --> DropCourse
     Student --> ViewLesson
     Student --> CompleteLesson
+    Student --> StartAssignment
     Student --> SubmitAssignment
     Student --> ViewSubmissions
     Student --> ViewFeedback
@@ -130,11 +157,27 @@ graph TB
     System --> GenerateCertificate
     System --> GenerateInvoice
     System --> ProcessPayment
+    System --> CheckPermissions
+
+    AI --> GenerateContent
+    AI --> SuggestImprovements
+    AI --> AutoGrade
+    AI --> GenerateQuestions
+
+    Teacher -.-> AI
+    Teacher -.-> GenerateContent
+    Teacher -.-> SuggestImprovements
+    Teacher -.-> GenerateQuestions
+
+    Admin -.-> AI
+    Admin -.-> AutoGrade
 
     CreateCourse -.-> ViewCourses
     EnrollCourse -.-> ViewEnrollments
     CompleteLesson -.-> TrackProgress
+    StartAssignment -.-> SubmitAssignment
     SubmitAssignment -.-> GradeSubmission
     GradeSubmission -.-> ViewGrades
     ProcessPayment -.-> GenerateInvoice
+    AssignRoles -.-> CheckPermissions
 ```
