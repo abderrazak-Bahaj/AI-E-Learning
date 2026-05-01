@@ -21,13 +21,13 @@ final class UserSeeder extends Seeder
             [
                 'name' => 'Admin User',
                 'password' => Hash::make('password'),
-                'role' => 'admin',
                 'status' => 'ACTIVE',
                 'phone' => '+1-555-000-0001',
                 'email_verified_at' => now(),
                 'last_login_at' => now(),
             ]
         );
+        $admin->syncRoles(['admin']);
 
         Admin::firstOrCreate(
             ['user_id' => $admin->id],
@@ -89,12 +89,12 @@ final class UserSeeder extends Seeder
                 ['email' => $data['user']['email']],
                 array_merge($data['user'], [
                     'password' => Hash::make('password'),
-                    'role' => 'teacher',
                     'status' => 'ACTIVE',
                     'email_verified_at' => now(),
                     'last_login_at' => now(),
                 ])
             );
+            $teacher->syncRoles(['teacher']);
 
             Teacher::firstOrCreate(
                 ['user_id' => $teacher->id],
@@ -147,12 +147,12 @@ final class UserSeeder extends Seeder
                 ['email' => $data['user']['email']],
                 array_merge($data['user'], [
                     'password' => Hash::make('password'),
-                    'role' => 'student',
                     'status' => 'ACTIVE',
                     'email_verified_at' => now(),
                     'last_login_at' => now(),
                 ])
             );
+            $student->syncRoles(['student']);
 
             Student::firstOrCreate(
                 ['user_id' => $student->id],

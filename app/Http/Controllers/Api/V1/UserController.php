@@ -23,23 +23,27 @@ final class UserController extends ApiController
 
         $search = $request->string('search')->toString();
 
-        $users = User::query()
-            ->when($request->filled('role'), fn ($q) => $q->where('role', $request->role))
+        $query = User::query()
+            ->when($request->filled('role'), fn ($q) => $q->role($request->role))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($search !== '', fn ($q) => $q->where(function ($q) use ($search): void {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
             }))
-            ->latest()
-            ->paginate((int) $request->input('per_page', 20));
+            ->latest();
 
-        return $this->success(UserResource::collection($users));
+        return $this->success(UserResource::collection(
+            $query->paginate((int) $request->input('per_page', 20))
+        ));
     }
 
     public function show(User $user): JsonResponse
     {
         $this->authorize('view', $user);
-        $user->load($user->role);
+        $roleName = $user->getRoleNames()->first();
+        if ($roleName) {
+            $user->load($roleName);
+        }
 
         return $this->success(new UserResource($user));
     }
@@ -48,10 +52,19 @@ final class UserController extends ApiController
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
         $this->authorize('update', $user);
-        $user->update($request->validated());
+
+        $data = $request->validated();
+
+        // Role is managed by Spatie — handle separately, not via mass assignment
+        if (isset($data['role'])) {
+            $user->syncRoles([$data['role']]);
+            unset($data['role']);
+        }
+
+        $user->update($data);
 
         return $this->success(
-            new UserResource($user->fresh()->load($user->role)),
+            new UserResource($user->fresh()->load($user->getRoleNames()->first() ?? 'student')),
             'User updated successfully'
         );
     }

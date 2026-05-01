@@ -14,6 +14,9 @@ final class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // 0. Roles must exist before users are created
+        $this->call(RoleSeeder::class);
+
         // 1. Users (admin, teachers, students)
         if (User::count() === 0) {
             $this->call(UserSeeder::class);

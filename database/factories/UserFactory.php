@@ -27,7 +27,6 @@ final class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => self::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
-            'role' => 'student',
             'status' => 'ACTIVE',
             'avatar' => null,
             'phone' => fake()->optional()->phoneNumber(),
@@ -44,25 +43,34 @@ final class UserFactory extends Factory
         ]);
     }
 
+    /**
+     * Assign the 'admin' role after creation.
+     */
     public function admin(): static
     {
-        return $this->state(fn (array $attributes): array => [
-            'role' => 'admin',
-        ]);
+        return $this->afterCreating(function (User $user): void {
+            $user->assignRole('admin');
+        });
     }
 
+    /**
+     * Assign the 'teacher' role after creation.
+     */
     public function teacher(): static
     {
-        return $this->state(fn (array $attributes): array => [
-            'role' => 'teacher',
-        ]);
+        return $this->afterCreating(function (User $user): void {
+            $user->assignRole('teacher');
+        });
     }
 
+    /**
+     * Assign the 'student' role after creation.
+     */
     public function student(): static
     {
-        return $this->state(fn (array $attributes): array => [
-            'role' => 'student',
-        ]);
+        return $this->afterCreating(function (User $user): void {
+            $user->assignRole('student');
+        });
     }
 
     public function suspended(): static

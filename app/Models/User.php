@@ -17,6 +17,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Passport\Contracts\OAuthenticatable;
 use Laravel\Passport\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property string $id
@@ -26,7 +27,6 @@ use Laravel\Passport\HasApiTokens;
  * @property string|null $phone
  * @property string|null $address
  * @property string|null $bio
- * @property string $role
  * @property string $status
  * @property Carbon|null $email_verified_at
  * @property Carbon|null $last_login_at
@@ -41,6 +41,7 @@ final class User extends Authenticatable implements MustVerifyEmail, OAuthentica
     /** @use HasFactory<UserFactory> */
     use HasFactory;
 
+    use HasRoles;   // Spatie — provides hasRole(), assignRole(), getRoleNames(), etc.
     use HasStatus;
     use HasUuid;
     use Notifiable;
@@ -54,7 +55,6 @@ final class User extends Authenticatable implements MustVerifyEmail, OAuthentica
         'phone',
         'address',
         'bio',
-        'role',
         'status',
         'last_login_at',
     ];
@@ -116,29 +116,29 @@ final class User extends Authenticatable implements MustVerifyEmail, OAuthentica
         return $this->hasMany(LessonProgress::class, 'student_id');
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────────
+    // ── Role helpers (delegates to Spatie HasRoles) ────────────────────────────
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->hasRole('admin');
     }
 
     public function isTeacher(): bool
     {
-        return $this->role === 'teacher';
+        return $this->hasRole('teacher');
     }
 
     public function isStudent(): bool
     {
-        return $this->role === 'student';
+        return $this->hasRole('student');
     }
 
     public function profile(): Admin|Teacher|Student|null
     {
-        return match ($this->role) {
-            'admin' => $this->admin,
-            'teacher' => $this->teacher,
-            'student' => $this->student,
+        return match (true) {
+            $this->isAdmin() => $this->admin,
+            $this->isTeacher() => $this->teacher,
+            $this->isStudent() => $this->student,
             default => null,
         };
     }

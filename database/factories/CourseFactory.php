@@ -37,7 +37,7 @@ final class CourseFactory extends Factory
             'language' => fake()->randomElement(['English', 'French', 'Spanish', 'Arabic']),
             'duration' => fake()->numberBetween(300, 3000),
             'category_id' => Category::inRandomOrder()->value('id') ?? Category::factory(),
-            'teacher_id' => User::where('role', 'teacher')->inRandomOrder()->value('id') ?? User::factory()->teacher(),
+            'teacher_id' => User::role('teacher')->inRandomOrder()->value('id') ?? User::factory()->teacher(),
         ];
     }
 

@@ -19,7 +19,7 @@ final class PaymentSeeder extends Seeder
         $paymentCount = 0;
 
         // Create invoices for students who are enrolled in paid courses
-        $students = User::where('role', 'student')->get();
+        $students = User::role('student')->get();
 
         foreach ($students as $student) {
             $paidEnrollments = Enrollment::where('student_id', $student->id)

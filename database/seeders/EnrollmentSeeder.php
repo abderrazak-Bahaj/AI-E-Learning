@@ -17,7 +17,7 @@ final class EnrollmentSeeder extends Seeder
 {
     public function run(): void
     {
-        $students = User::where('role', 'student')->get();
+        $students = User::role('student')->get();
         $courses = Course::where('status', 'PUBLISHED')->get();
 
         if ($students->isEmpty() || $courses->isEmpty()) {

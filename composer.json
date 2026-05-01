@@ -16,6 +16,7 @@
         "laravel/tinker": "^3.0",
         "spatie/laravel-data": "^4.0",
         "spatie/laravel-pdf": "^2.8",
+        "spatie/laravel-permission": "^7.4",
         "spatie/laravel-query-builder": "^7.0"
     },
     "require-dev": {
