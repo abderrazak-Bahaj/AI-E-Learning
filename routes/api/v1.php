@@ -39,6 +39,7 @@ Route::middleware('throttle:6,1')->group(function (): void {
 // ── Public: Browse ────────────────────────────────────────────────────────────
 Route::get('categories', [CategoryController::class, 'index']);
 Route::get('categories/{category}', [CategoryController::class, 'show']);
+Route::get('categories/{category:slug}/courses', [CourseController::class, 'byCategory']);
 Route::get('courses', [CourseController::class, 'index']);
 Route::get('courses/{course}', [CourseController::class, 'show']);
 Route::get('courses/{course}/lessons', [LessonController::class, 'index']);

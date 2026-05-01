@@ -21,6 +21,9 @@ use Throwable;
 
 final class AssignmentController extends ApiController
 {
+    /**
+     * List published assignments for a course.
+     */
     public function index(Course $course): JsonResponse
     {
         $assignments = $course->assignments()
@@ -40,6 +43,9 @@ final class AssignmentController extends ApiController
         return $this->created(new AssignmentResource($assignment), 'Assignment created successfully');
     }
 
+    /**
+     * Get a single assignment with its questions and options.
+     */
     public function show(Course $course, Assignment $assignment): JsonResponse
     {
         $assignment->load('questions.options');
@@ -101,6 +107,12 @@ final class AssignmentController extends ApiController
      * Does NOT save — teacher calls store() to confirm.
      *
      * POST /courses/{course}/assignments/generate
+     */
+    /**
+     * AI: Generate an assignment draft for teacher review.
+     *
+     * Returns a draft — does NOT save. Teacher calls POST /assignments to confirm.
+     * Requires teacher or admin role.
      */
     public function generate(Request $request, Course $course): JsonResponse
     {

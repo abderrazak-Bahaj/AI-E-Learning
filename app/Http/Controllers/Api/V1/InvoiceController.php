@@ -14,6 +14,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class InvoiceController extends ApiController
 {
+    /**
+     * List invoices.
+     *
+     * Students see their own invoices. Admins see all invoices.
+     */
+    #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function index(Request $request): JsonResponse
     {
         $query = Invoice::query()->with('courses');
@@ -27,6 +34,9 @@ final class InvoiceController extends ApiController
         return $this->success(InvoiceResource::collection($query->latest()->paginate(15)));
     }
 
+    /**
+     * Get a single invoice with courses and payments.
+     */
     public function show(Invoice $invoice): JsonResponse
     {
         $this->authorize('view', $invoice);
@@ -37,6 +47,11 @@ final class InvoiceController extends ApiController
 
     /**
      * Return the invoice as an inline PDF.
+     */
+    /**
+     * Download an invoice as a PDF.
+     *
+     * Returns Content-Type: application/pdf.
      */
     public function print(Invoice $invoice): StreamedResponse|JsonResponse
     {

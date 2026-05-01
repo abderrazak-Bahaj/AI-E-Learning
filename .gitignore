@@ -33,3 +33,6 @@ CLAUDE.md
 # SQLite databases
 database/*.sqlite
 .kiro/*
+
+# Published vendor stubs (regenerate with: php artisan vendor:publish)
+/stubs/

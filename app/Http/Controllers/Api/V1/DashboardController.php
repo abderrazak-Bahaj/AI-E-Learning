@@ -19,6 +19,12 @@ final class DashboardController extends ApiController
 {
     // ── Admin ──────────────────────────────────────────────────────────────────
 
+    /**
+     * Admin dashboard statistics.
+     *
+     * Returns user counts by role, course stats, revenue, enrollments this month,
+     * and top 5 courses by enrollment. Cached for 5 minutes.
+     */
     public function adminStats(): JsonResponse
     {
         $stats = Cache::remember('dashboard.admin', 300, function (): array {
@@ -78,6 +84,12 @@ final class DashboardController extends ApiController
 
     // ── Teacher ────────────────────────────────────────────────────────────────
 
+    /**
+     * Teacher dashboard statistics.
+     *
+     * Returns the authenticated teacher's course stats, student counts,
+     * completion rate, pending submissions, and revenue. Cached for 5 minutes.
+     */
     public function teacherStats(Request $request): JsonResponse
     {
         $teacherId = $request->user()->id;
@@ -154,6 +166,12 @@ final class DashboardController extends ApiController
 
     // ── Student ────────────────────────────────────────────────────────────────
 
+    /**
+     * Student dashboard statistics.
+     *
+     * Returns the authenticated student's enrollment counts, certificates earned,
+     * average score, and recent enrollments.
+     */
     public function studentStats(Request $request): JsonResponse
     {
         $studentId = $request->user()->id;

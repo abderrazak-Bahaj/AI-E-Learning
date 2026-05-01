@@ -20,6 +20,13 @@ final class AiController extends ApiController
      *
      * POST /courses/{course}/lessons/{lesson}/explain
      */
+    /**
+     * AI: Ask a question about a lesson.
+     *
+     * The AI tutor explains the lesson content in response to the student's question.
+     * Only available to students enrolled in the course.
+     * Returns 503 if the AI provider is unavailable.
+     */
     public function explainLesson(Request $request, Course $course, Lesson $lesson): JsonResponse
     {
         $request->validate([

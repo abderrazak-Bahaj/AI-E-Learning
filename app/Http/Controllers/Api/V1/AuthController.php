@@ -22,6 +22,11 @@ use Illuminate\Support\Facades\Password;
 
 final class AuthController extends ApiController
 {
+    /**
+     * Register a new user account.
+     *
+     * Returns a Passport Bearer token. An email verification link is sent automatically.
+     */
     public function register(RegisterRequest $request): JsonResponse
     {
         $user = User::query()->create([
@@ -40,6 +45,9 @@ final class AuthController extends ApiController
         ], 'User registered successfully. Please check your email to verify your account.');
     }
 
+    /**
+     * Authenticate and receive a Bearer token.
+     */
     public function login(LoginRequest $request): JsonResponse
     {
         $user = User::query()->where('email', $request->email)->first();
@@ -56,6 +64,9 @@ final class AuthController extends ApiController
         ], 'Login successful');
     }
 
+    /**
+     * Revoke the current access token.
+     */
     public function logout(Request $request): JsonResponse
     {
         /** @var User $user */
@@ -65,6 +76,9 @@ final class AuthController extends ApiController
         return $this->success(message: 'Logged out successfully');
     }
 
+    /**
+     * Get the authenticated user's profile.
+     */
     public function me(Request $request): JsonResponse
     {
         return $this->success(new UserResource($request->user()));
@@ -103,6 +117,9 @@ final class AuthController extends ApiController
         return $this->success(message: 'Verification email sent successfully');
     }
 
+    /**
+     * Send a password reset link to the given email address.
+     */
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
         $status = Password::sendResetLink(
@@ -116,6 +133,9 @@ final class AuthController extends ApiController
         return $this->error('Unable to send reset link', 500);
     }
 
+    /**
+     * Reset the user's password using a valid reset token.
+     */
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
         $status = Password::reset(

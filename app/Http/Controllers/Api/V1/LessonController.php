@@ -14,6 +14,11 @@ use Illuminate\Http\JsonResponse;
 
 final class LessonController extends ApiController
 {
+    /**
+     * List published lessons for a course.
+     *
+     * Ordered by section then order. Includes resources.
+     */
     public function index(Course $course): JsonResponse
     {
         $lessons = $course->lessons()
@@ -25,6 +30,11 @@ final class LessonController extends ApiController
         return $this->success(LessonResource::collection($lessons));
     }
 
+    /**
+     * Create a lesson in a course.
+     *
+     * Course owner or admin only.
+     */
     public function store(StoreLessonRequest $request, Course $course): JsonResponse
     {
         $this->authorize('create', [Lesson::class, $course]);
@@ -34,6 +44,9 @@ final class LessonController extends ApiController
         return $this->created(new LessonResource($lesson), 'Lesson created successfully');
     }
 
+    /**
+     * Get a single lesson with its resources and assignments.
+     */
     public function show(Course $course, Lesson $lesson): JsonResponse
     {
         $lesson->load('resources', 'assignments');

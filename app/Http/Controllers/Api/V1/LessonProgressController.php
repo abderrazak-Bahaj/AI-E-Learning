@@ -17,6 +17,9 @@ use Illuminate\Http\Request;
 
 final class LessonProgressController extends ApiController
 {
+    /**
+     * Get the authenticated student's progress for all lessons in a course.
+     */
     public function index(Request $request, Course $course): JsonResponse
     {
         $progress = LessonProgress::query()
@@ -27,6 +30,12 @@ final class LessonProgressController extends ApiController
         return $this->success(LessonProgressResource::collection($progress));
     }
 
+    /**
+     * Update lesson progress for the authenticated student.
+     *
+     * When all lessons reach COMPLETED status, the enrollment is automatically
+     * marked as completed and a certificate is issued.
+     */
     public function update(UpdateLessonProgressRequest $request, Course $course, Lesson $lesson): JsonResponse
     {
         $data = $request->validated();

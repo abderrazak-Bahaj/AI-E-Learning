@@ -26,6 +26,7 @@ final class CategoryResource extends JsonResource
             'parent' => new self($this->whenLoaded('parent')),
             'children' => self::collection($this->whenLoaded('children')),
             'courses_count' => $this->whenCounted('courses'),
+            'courses' => CourseResource::collection($this->whenLoaded('courses')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

@@ -17,6 +17,9 @@ final class CertificateController extends ApiController
 {
     public function __construct(private readonly CertificateServiceInterface $certificateService) {}
 
+    /**
+     * List the authenticated student's generated certificates.
+     */
     public function index(Request $request): JsonResponse
     {
         $certificates = Certificate::query()
@@ -29,6 +32,9 @@ final class CertificateController extends ApiController
         return $this->success(CertificateResource::collection($certificates));
     }
 
+    /**
+     * Get a single certificate with course and enrollment details.
+     */
     public function show(Certificate $certificate): JsonResponse
     {
         $this->authorize('view', $certificate);
@@ -40,6 +46,12 @@ final class CertificateController extends ApiController
     /**
      * Download the certificate as a PDF.
      * Generates the PDF on first request, then serves from storage.
+     */
+    /**
+     * Download a certificate as a PDF.
+     *
+     * Generates the PDF on first request, then serves from storage.
+     * Returns Content-Type: application/pdf.
      */
     public function download(Certificate $certificate): BinaryFileResponse|JsonResponse
     {

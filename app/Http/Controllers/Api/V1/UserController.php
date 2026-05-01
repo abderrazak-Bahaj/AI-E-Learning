@@ -17,6 +17,16 @@ use Illuminate\Validation\Rule;
 
 final class UserController extends ApiController
 {
+    /**
+     * List all users.
+     *
+     * Admin only. Supports search by name/email and filter by role/status.
+     */
+    #[\Dedoc\Scramble\Attributes\QueryParameter('search', description: 'Search by name or email.', type: 'string', example: 'alice')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('role', description: 'Filter by role: admin, teacher, student.', type: 'string', example: 'teacher')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('filter[status]', description: 'Filter by status: ACTIVE, INACTIVE, SUSPENDED.', type: 'string')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 20)]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', User::class);
@@ -37,6 +47,9 @@ final class UserController extends ApiController
         ));
     }
 
+    /**
+     * Get a single user with their role profile (admin/teacher/student).
+     */
     public function show(User $user): JsonResponse
     {
         $this->authorize('view', $user);
@@ -49,6 +62,11 @@ final class UserController extends ApiController
     }
 
     /** Admin: update any user's details */
+    /**
+     * Update a user's details.
+     *
+     * Admin only. Use `role` field to change the user's Spatie role.
+     */
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
         $this->authorize('update', $user);
@@ -70,6 +88,11 @@ final class UserController extends ApiController
     }
 
     /** Admin: change a user's account status */
+    /**
+     * Change a user's account status.
+     *
+     * Admin only. Valid values: ACTIVE, INACTIVE, SUSPENDED.
+     */
     public function updateStatus(Request $request, User $user): JsonResponse
     {
         $this->authorize('update', $user);
@@ -83,6 +106,9 @@ final class UserController extends ApiController
         return $this->success(new UserResource($user->fresh()), 'User status updated');
     }
 
+    /**
+     * Update the authenticated user's own profile.
+     */
     public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
         $request->user()->update($request->validated());
@@ -93,6 +119,9 @@ final class UserController extends ApiController
         );
     }
 
+    /**
+     * Change the authenticated user's password.
+     */
     public function updatePassword(UpdatePasswordRequest $request): JsonResponse
     {
         $request->user()->update([
@@ -102,6 +131,11 @@ final class UserController extends ApiController
         return $this->success(message: 'Password updated successfully');
     }
 
+    /**
+     * Delete a user (soft delete).
+     *
+     * Admin only. Cannot delete yourself.
+     */
     public function destroy(User $user): JsonResponse
     {
         $this->authorize('delete', $user);

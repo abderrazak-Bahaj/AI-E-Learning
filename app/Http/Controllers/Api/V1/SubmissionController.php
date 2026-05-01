@@ -19,6 +19,11 @@ use Throwable;
 
 final class SubmissionController extends ApiController
 {
+    /**
+     * List submissions for an assignment.
+     *
+     * Students see only their own submissions. Teachers/admins see all.
+     */
     public function index(Request $request, Course $course, Assignment $assignment): JsonResponse
     {
         $query = $assignment->submissions()->with('student');
@@ -30,6 +35,12 @@ final class SubmissionController extends ApiController
         return $this->success(SubmissionResource::collection($query->latest()->get()));
     }
 
+    /**
+     * Submit answers to an assignment.
+     *
+     * Multiple-choice answers are auto-graded immediately.
+     * Essay answers require manual grading via PATCH /grade.
+     */
     public function store(StoreSubmissionRequest $request, Course $course, Assignment $assignment): JsonResponse
     {
         $this->authorize('create', Submission::class);
@@ -75,6 +86,11 @@ final class SubmissionController extends ApiController
         return $this->success(new SubmissionResource($submission));
     }
 
+    /**
+     * Grade a submission.
+     *
+     * Teacher or admin only. Sets score, feedback, and marks is_passed.
+     */
     public function grade(GradeSubmissionRequest $request, Course $course, Assignment $assignment, Submission $submission): JsonResponse
     {
         $this->authorize('grade', $submission);
@@ -101,6 +117,12 @@ final class SubmissionController extends ApiController
      * Returns a score suggestion — does NOT save. Teacher must confirm via grade().
      *
      * POST /courses/{course}/assignments/{assignment}/submissions/{submission}/pre-grade
+     */
+    /**
+     * AI: Pre-grade an essay submission.
+     *
+     * Returns AI score suggestion — does NOT save. Teacher confirms via PATCH /grade.
+     * Teacher or admin only.
      */
     public function preGrade(Course $course, Assignment $assignment, Submission $submission): JsonResponse
     {

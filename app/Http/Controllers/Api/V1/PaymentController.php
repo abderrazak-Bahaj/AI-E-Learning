@@ -30,6 +30,11 @@ final class PaymentController extends ApiController
 
     // ── List user payments ─────────────────────────────────────────────────────
 
+    /**
+     * List the authenticated user's payment history.
+     */
+    #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function index(Request $request): JsonResponse
     {
         $payments = Payment::query()
@@ -46,6 +51,13 @@ final class PaymentController extends ApiController
     /**
      * Validates the cart, builds an invoice, and returns a PayPal approval URL.
      * Free courses are enrolled immediately without going through PayPal.
+     */
+    /**
+     * Step 1: Create a PayPal order for course purchase.
+     *
+     * Free courses are enrolled immediately without PayPal.
+     * Paid courses return an `approval_url` — redirect the user there to approve payment.
+     * After approval, call POST /payments/capture-order.
      */
     public function createOrder(CreateOrderRequest $request): JsonResponse
     {
@@ -130,6 +142,13 @@ final class PaymentController extends ApiController
     /**
      * Called after the user approves the payment on PayPal.
      * Captures the order, records the transaction, and creates enrollments.
+     */
+    /**
+     * Step 2: Capture an approved PayPal order.
+     *
+     * Call this after the user approves payment on PayPal.
+     * Creates Payment record, marks Invoice as PAID, and enrolls the student.
+     * Idempotent — safe to call multiple times on the same invoice.
      */
     public function captureOrder(CaptureOrderRequest $request): JsonResponse
     {

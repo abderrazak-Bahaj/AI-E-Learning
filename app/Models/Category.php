@@ -84,4 +84,13 @@ final class Category extends Model
     {
         return $this->parent_id === null;
     }
+
+    /**
+     * Resolve route model binding by slug instead of id.
+     * Allows: GET /categories/web-development
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 }

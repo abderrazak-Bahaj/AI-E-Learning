@@ -14,6 +14,11 @@ use Illuminate\Http\Request;
 
 final class EnrollmentController extends ApiController
 {
+    /**
+     * List the authenticated student's enrollments.
+     */
+    #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function index(Request $request): JsonResponse
     {
         $enrollments = Enrollment::query()
@@ -25,6 +30,12 @@ final class EnrollmentController extends ApiController
         return $this->success(EnrollmentResource::collection($enrollments));
     }
 
+    /**
+     * Enroll in a course.
+     *
+     * For free courses, enrollment is immediate.
+     * For paid courses, use POST /payments/create-order first.
+     */
     public function store(StoreEnrollmentRequest $request): JsonResponse
     {
         $this->authorize('create', Enrollment::class);
@@ -55,6 +66,9 @@ final class EnrollmentController extends ApiController
         );
     }
 
+    /**
+     * Get a single enrollment with course and certificate.
+     */
     public function show(Enrollment $enrollment): JsonResponse
     {
         $this->authorize('view', $enrollment);
@@ -63,6 +77,11 @@ final class EnrollmentController extends ApiController
         return $this->success(new EnrollmentResource($enrollment));
     }
 
+    /**
+     * Drop an enrollment.
+     *
+     * Sets status to DROPPED. Student or admin only.
+     */
     public function destroy(Enrollment $enrollment): JsonResponse
     {
         $this->authorize('delete', $enrollment);
