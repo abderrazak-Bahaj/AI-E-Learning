@@ -17,17 +17,22 @@ final class EnrollmentController extends ApiController
     /**
      * List the authenticated student's enrollments.
      */
+    #[\Dedoc\Scramble\Attributes\QueryParameter('filter[status]', description: 'Filter by status: ACTIVE, COMPLETED, DROPPED.', type: 'string')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: enrolled_at, progress.', type: 'string', example: 'enrolled_at')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'Sort direction: asc or desc.', type: 'string', example: 'desc')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
     #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function index(Request $request): JsonResponse
     {
-        $enrollments = Enrollment::query()
-            ->forStudent($request->user()->id)
-            ->with('course.category', 'certificate')
-            ->latest('enrolled_at')
-            ->paginate(15);
-
-        return $this->success(EnrollmentResource::collection($enrollments));
+        return $this->paginatedResponse(
+            query: Enrollment::query()
+                ->forStudent($request->user()->id)
+                ->with('course.category', 'certificate'),
+            request: $request,
+            resourceClass: EnrollmentResource::class,
+            allowedSorts: ['enrolled_at', 'progress'],
+            allowedFilters: ['status'],
+        );
     }
 
     /**

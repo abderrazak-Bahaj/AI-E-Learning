@@ -17,20 +17,27 @@ final class CategoryController extends ApiController
     /**
      * List all active categories.
      *
-     * Returns a flat list of root categories. Pass `with_children=true` to include sub-categories.
+     * Returns a paginated list of root categories. Pass `with_children=true` to include sub-categories.
      */
     #[\Dedoc\Scramble\Attributes\QueryParameter('with_children', description: 'Include child categories.', type: 'boolean', example: false)]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('search', description: 'Search in name and description.', type: 'string')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: name, order, created_at.', type: 'string', example: 'name')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'Sort direction: asc or desc.', type: 'string', example: 'asc')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function index(Request $request): JsonResponse
     {
-        $categories = Category::query()
-            ->active()
-            ->withCount('courses')
-            ->when($request->boolean('with_children'), fn ($q) => $q->with('children'))
-            ->roots()
-            ->ordered()
-            ->get();
-
-        return $this->success(CategoryResource::collection($categories));
+        return $this->paginatedResponse(
+            query: Category::query()
+                ->active()
+                ->withCount('courses')
+                ->when($request->boolean('with_children'), fn ($q) => $q->with('children'))
+                ->roots(),
+            request: $request,
+            resourceClass: CategoryResource::class,
+            searchColumns: ['name', 'description'],
+            allowedSorts: ['name', 'order', 'created_at'],
+        );
     }
 
     /**

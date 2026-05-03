@@ -19,6 +19,9 @@ final class InvoiceController extends ApiController
      *
      * Students see their own invoices. Admins see all invoices.
      */
+    #[\Dedoc\Scramble\Attributes\QueryParameter('filter[status]', description: 'Filter by status: PAID, PENDING, CANCELLED.', type: 'string')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: created_at, total_amount.', type: 'string', example: 'created_at')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'Sort direction: asc or desc.', type: 'string', example: 'desc')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
     #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function index(Request $request): JsonResponse
@@ -31,7 +34,13 @@ final class InvoiceController extends ApiController
             $query->forUser($request->user()->id);
         }
 
-        return $this->success(InvoiceResource::collection($query->latest()->paginate(15)));
+        return $this->paginatedResponse(
+            query: $query,
+            request: $request,
+            resourceClass: InvoiceResource::class,
+            allowedSorts: ['created_at', 'total_amount'],
+            allowedFilters: ['status'],
+        );
     }
 
     /**

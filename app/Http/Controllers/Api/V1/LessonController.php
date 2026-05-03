@@ -11,6 +11,7 @@ use App\Http\Resources\LessonResource;
 use App\Models\Course;
 use App\Models\Lesson;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 final class LessonController extends ApiController
 {
@@ -19,15 +20,22 @@ final class LessonController extends ApiController
      *
      * Ordered by section then order. Includes resources.
      */
-    public function index(Course $course): JsonResponse
+    #[\Dedoc\Scramble\Attributes\QueryParameter('search', description: 'Search in title.', type: 'string')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: title, order, duration.', type: 'string', example: 'order')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'Sort direction: asc or desc.', type: 'string', example: 'asc')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
+    public function index(Request $request, Course $course): JsonResponse
     {
-        $lessons = $course->lessons()
-            ->published()
-            ->with('resources')
-            ->ordered()
-            ->get();
-
-        return $this->success(LessonResource::collection($lessons));
+        return $this->paginatedResponse(
+            query: $course->lessons()
+                ->published()
+                ->with('resources'),
+            request: $request,
+            resourceClass: LessonResource::class,
+            searchColumns: ['title'],
+            allowedSorts: ['title', 'order', 'duration'],
+        );
     }
 
     /**

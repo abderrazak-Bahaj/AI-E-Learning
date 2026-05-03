@@ -28,7 +28,7 @@ help:
 
 # Installation Commands
 .PHONY: install
-install: build storage-link fresh passport
+install: build up storage-link fresh passport
 
 .PHONY: reinstall
 reinstall: build up fresh passport-keys
@@ -47,6 +47,10 @@ build:
 	docker compose build --no-cache
 
 .PHONY: bash
+
+composer:
+	docker compose exec -it app composer install
+
 bash:
 	docker compose exec -it app bash
 
