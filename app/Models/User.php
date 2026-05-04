@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Notifications\ResetPasswordNotification;
 use App\Traits\HasStatus;
 use App\Traits\HasUuid;
 use Database\Factories\UserFactory;
@@ -152,5 +153,15 @@ final class User extends Authenticatable implements MustVerifyEmail, OAuthentica
             'last_login_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    // ── Password Reset Notification ────────────────────────────────────────────
+
+    /**
+     * Send the password reset notification.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 }
