@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Notifications\ResetPasswordNotification;
+use App\Notifications\VerifyEmailNotification;
+use App\Notifications\WelcomeNotification;
 use App\Traits\HasStatus;
 use App\Traits\HasUuid;
 use Database\Factories\UserFactory;
@@ -163,5 +165,21 @@ final class User extends Authenticatable implements MustVerifyEmail, OAuthentica
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new ResetPasswordNotification($token));
+    }
+
+    /**
+     * Send the email verification notification.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmailNotification());
+    }
+
+    /**
+     * Send the welcome notification.
+     */
+    public function sendWelcomeNotification(): void
+    {
+        $this->notify(new WelcomeNotification());
     }
 }
