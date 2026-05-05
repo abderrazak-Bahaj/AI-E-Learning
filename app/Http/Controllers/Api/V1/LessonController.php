@@ -12,6 +12,7 @@ use App\Models\Course;
 use App\Models\Lesson;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\QueryBuilder\QueryBuilder;
 
 final class LessonController extends ApiController
 {
@@ -20,21 +21,24 @@ final class LessonController extends ApiController
      *
      * Ordered by section then order. Includes resources.
      */
-    #[\Dedoc\Scramble\Attributes\QueryParameter('search', description: 'Search in title.', type: 'string')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('filter', description: 'Filter by column: status.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: title, order, duration.', type: 'string', example: 'order')]
-    #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'Sort direction: asc or desc.', type: 'string', example: 'asc')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('include', description: 'Include relations: resources, assignments.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
     #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function index(Request $request, Course $course): JsonResponse
     {
+        $query = QueryBuilder::for($course->lessons())
+            ->published()
+            ->with('resources');
+
         return $this->paginatedResponse(
-            query: $course->lessons()
-                ->published()
-                ->with('resources'),
+            query: $query,
             request: $request,
             resourceClass: LessonResource::class,
-            searchColumns: ['title'],
+            allowedFilters: ['status'],
             allowedSorts: ['title', 'order', 'duration'],
+            allowedIncludes: ['resources', 'assignments'],
         );
     }
 

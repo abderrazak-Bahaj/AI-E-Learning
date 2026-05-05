@@ -10,6 +10,7 @@ use App\Models\Invoice;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\LaravelPdf\Facades\Pdf;
+use Spatie\QueryBuilder\QueryBuilder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class InvoiceController extends ApiController
@@ -22,11 +23,13 @@ final class InvoiceController extends ApiController
     #[\Dedoc\Scramble\Attributes\QueryParameter('filter[status]', description: 'Filter by status: PAID, PENDING, CANCELLED.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: created_at, total_amount.', type: 'string', example: 'created_at')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'Sort direction: asc or desc.', type: 'string', example: 'desc')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('include', description: 'Include relations: courses, user, payments.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
     #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function index(Request $request): JsonResponse
     {
-        $query = Invoice::query()->with('courses');
+        $query = QueryBuilder::for(Invoice::class)
+            ->with('courses');
 
         if ($request->user()->isAdmin()) {
             $query->with('user');
@@ -40,6 +43,7 @@ final class InvoiceController extends ApiController
             resourceClass: InvoiceResource::class,
             allowedSorts: ['created_at', 'total_amount'],
             allowedFilters: ['status'],
+            allowedIncludes: ['courses', 'user', 'payments'],
         );
     }
 

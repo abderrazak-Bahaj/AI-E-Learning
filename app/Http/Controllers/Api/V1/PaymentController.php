@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use Spatie\QueryBuilder\QueryBuilder;
 use Throwable;
 
 final class PaymentController extends ApiController
@@ -33,17 +34,26 @@ final class PaymentController extends ApiController
     /**
      * List the authenticated user's payment history.
      */
+    #[\Dedoc\Scramble\Attributes\QueryParameter('filter[status]', description: 'Filter by status: COMPLETED, PENDING, FAILED.', type: 'string')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: created_at, amount.', type: 'string')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'Sort direction: asc or desc.', type: 'string')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('include', description: 'Include relations: course, invoice.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
     #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function index(Request $request): JsonResponse
     {
-        $payments = Payment::query()
+        $query = QueryBuilder::for(Payment::class)
             ->where('user_id', $request->user()->id)
-            ->with('course', 'invoice')
-            ->latest()
-            ->paginate(15);
+            ->with('course', 'invoice');
 
-        return $this->success(PaymentResource::collection($payments));
+        return $this->paginatedResponse(
+            query: $query,
+            request: $request,
+            resourceClass: PaymentResource::class,
+            allowedSorts: ['created_at'],
+            allowedFilters: ['status'],
+            allowedIncludes: ['course', 'invoice'],
+        );
     }
 
     // ── Step 1: Create a PayPal order ──────────────────────────────────────────

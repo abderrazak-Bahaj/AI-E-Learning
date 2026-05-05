@@ -11,6 +11,7 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\QueryBuilder\QueryBuilder;
 
 final class EnrollmentController extends ApiController
 {
@@ -20,18 +21,22 @@ final class EnrollmentController extends ApiController
     #[\Dedoc\Scramble\Attributes\QueryParameter('filter[status]', description: 'Filter by status: ACTIVE, COMPLETED, DROPPED.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: enrolled_at, progress.', type: 'string', example: 'enrolled_at')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'Sort direction: asc or desc.', type: 'string', example: 'desc')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('include', description: 'Include relations: course, certificate.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
     #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function index(Request $request): JsonResponse
     {
+        $query = QueryBuilder::for(Enrollment::class)
+            ->forStudent($request->user()->id)
+            ->with('course.category', 'certificate');
+
         return $this->paginatedResponse(
-            query: Enrollment::query()
-                ->forStudent($request->user()->id)
-                ->with('course.category', 'certificate'),
+            query: $query,
             request: $request,
             resourceClass: EnrollmentResource::class,
             allowedSorts: ['enrolled_at', 'progress'],
             allowedFilters: ['status'],
+            allowedIncludes: ['course', 'certificate'],
         );
     }
 

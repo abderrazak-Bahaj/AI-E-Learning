@@ -11,6 +11,7 @@ use App\Http\Resources\CourseResource;
 use App\Models\Course;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\QueryBuilder\QueryBuilder;
 
 final class CourseController extends ApiController
 {
@@ -25,23 +26,27 @@ final class CourseController extends ApiController
     #[\Dedoc\Scramble\Attributes\QueryParameter('filter[language]', description: 'Filter by language.', type: 'string', example: 'English')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: title, price, created_at, duration.', type: 'string', example: 'price')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'Sort direction: asc or desc.', type: 'string', example: 'asc')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('include', description: 'Include relations: category, teacher.', type: 'string', example: 'category,teacher')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15, example: 10)]
     #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1, example: 2)]
     public function index(Request $request): JsonResponse
     {
+        $query = QueryBuilder::for(Course::class)
+            ->published()
+            ->with('category', 'teacher')
+            ->withCount('lessons', 'enrollments')
+            ->when($request->filled('category'), fn ($q) => $q->whereHas(
+                'category', fn ($q) => $q->where('slug', $request->category)
+            ));
+
         return $this->paginatedResponse(
-            query: Course::query()
-                ->published()
-                ->with('category', 'teacher')
-                ->withCount('lessons', 'enrollments')
-                ->when($request->filled('category'), fn ($q) => $q->whereHas(
-                    'category', fn ($q) => $q->where('slug', $request->category)
-                )),
+            query: $query,
             request: $request,
             resourceClass: CourseResource::class,
             searchColumns: ['title', 'description'],
             allowedSorts: ['title', 'price', 'created_at', 'duration'],
             allowedFilters: ['status', 'level', 'category_id', 'language'],
+            allowedIncludes: ['category', 'teacher'],
         );
     }
 
@@ -135,20 +140,24 @@ final class CourseController extends ApiController
     #[\Dedoc\Scramble\Attributes\QueryParameter('filter[language]', description: 'Filter by language.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: title, price, created_at, duration.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'asc or desc.', type: 'string', default: 'desc')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('include', description: 'Include relations: category, teacher.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
     public function byCategory(Request $request, \App\Models\Category $category): JsonResponse
     {
+        $query = QueryBuilder::for(Course::class)
+            ->published()
+            ->where('category_id', $category->id)
+            ->with('category', 'teacher')
+            ->withCount('lessons', 'enrollments');
+
         return $this->paginatedResponse(
-            query: Course::query()
-                ->published()
-                ->where('category_id', $category->id)
-                ->with('category', 'teacher')
-                ->withCount('lessons', 'enrollments'),
+            query: $query,
             request: $request,
             resourceClass: CourseResource::class,
             searchColumns: ['title', 'description'],
             allowedSorts: ['title', 'price', 'created_at', 'duration'],
             allowedFilters: ['level', 'language'],
+            allowedIncludes: ['category', 'teacher'],
         );
     }
 }
