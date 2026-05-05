@@ -26,6 +26,7 @@ final class AuthController extends ApiController
      * Register a new user account.
      *
      * Returns a Passport Bearer token. An email verification link is sent automatically.
+     * New users are assigned the 'student' role by default.
      */
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -34,6 +35,9 @@ final class AuthController extends ApiController
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
+
+        // Assign student role to new users
+        $user->assignRole('student');
 
         $user->sendEmailVerificationNotification();
 
@@ -54,6 +58,11 @@ final class AuthController extends ApiController
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             return $this->unauthorized('Invalid credentials');
+        }
+
+        // Ensure user has a role (for backward compatibility with existing users)
+        if ($user->getRoleNames()->isEmpty()) {
+            $user->assignRole('student');
         }
 
         $token = $user->createToken('auth-token')->accessToken;
@@ -81,13 +90,48 @@ final class AuthController extends ApiController
      */
     public function me(Request $request): JsonResponse
     {
-        return $this->success(new UserResource($request->user()));
+        $user = $request->user();
+        
+        // Ensure user has a role (for backward compatibility with existing users)
+        if ($user->getRoleNames()->isEmpty()) {
+            $user->assignRole('student');
+        }
+        
+        return $this->success(new UserResource($user));
     }
 
     public function verifyEmail(VerifyEmailRequest $request): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return $this->success(message: 'Email already verified');
+        }
+
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
+        }
+
+        return $this->success(message: 'Email verified successfully');
+    }
+
+    /**
+     * Verify email from public link (no authentication required).
+     * Uses signed URL middleware to prevent tampering.
+     */
+    public function verifyEmailPublic(Request $request, string $id, string $hash): JsonResponse
+    {
+        try {
+            $user = User::query()->findOrFail($id);
+        } catch (\Exception) {
+            return $this->error('Invalid verification link', 400);
+        }
+
+        // Verify the hash matches the user's email
+        if (sha1($user->getEmailForPasswordReset()) !== $hash) {
+            return $this->error('Invalid verification link', 400);
+        }
 
         if ($user->hasVerifiedEmail()) {
             return $this->success(message: 'Email already verified');

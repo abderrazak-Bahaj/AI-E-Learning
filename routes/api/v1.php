@@ -34,6 +34,9 @@ Route::middleware('throttle:auth')->group(function (): void {
 Route::middleware('throttle:6,1')->group(function (): void {
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
+    Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verifyEmailPublic'])
+        ->middleware('signed')
+        ->name('verification.verify.public');
 });
 
 // ── Public: Browse ────────────────────────────────────────────────────────────
