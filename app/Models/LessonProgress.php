@@ -80,6 +80,11 @@ final class LessonProgress extends Model
         return $query->where('student_id', $studentId);
     }
 
+    public function scopeForCourse(Builder $query, string $courseId): Builder
+    {
+        return $query->where('course_id', $courseId);
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────────
 
     public function isCompleted(): bool

@@ -184,6 +184,12 @@ final class PaymentController extends ApiController
             // Check current order status before attempting capture
             $orderDetails = $this->paypal->getOrder($request->order_id);
 
+            Log::info('PayPal order details retrieved', [
+                'order_id' => $request->order_id,
+                'status' => $orderDetails['status'] ?? 'unknown',
+                'full_response' => $orderDetails,
+            ]);
+
             $captureResult = match ($orderDetails['status']) {
                 'COMPLETED' => $orderDetails,
                 'APPROVED' => $this->paypal->captureOrder($request->order_id),
@@ -228,6 +234,7 @@ final class PaymentController extends ApiController
                 'invoice_id' => $invoice->id,
                 'order_id' => $request->order_id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             // Mark invoice as failed so the user knows
@@ -314,6 +321,7 @@ final class PaymentController extends ApiController
         $course->loadMissing('lessons');
 
         $progressRows = $course->lessons->map(fn ($lesson) => [
+            'id' => (string) \Illuminate\Support\Str::uuid(),
             'student_id' => $userId,
             'lesson_id' => $lesson->id,
             'course_id' => $course->id,

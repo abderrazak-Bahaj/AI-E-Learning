@@ -14,15 +14,25 @@ final class EnrollmentResource extends JsonResource
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
+        $lastLesson = $this->getLastLessonInProgress();
+
         return [
             'id' => $this->id,
             'status' => $this->status,
             'progress' => $this->progress,
+            'progress_percentage' => $this->progress_percentage,
             'enrolled_at' => $this->enrolled_at?->toIso8601String(),
             'completed_at' => $this->completed_at?->toIso8601String(),
             'student' => new UserResource($this->whenLoaded('student')),
             'course' => new CourseResource($this->whenLoaded('course')),
             'certificate' => new CertificateResource($this->whenLoaded('certificate')),
+            'last_lesson_in_progress' => $lastLesson ? [
+                'lesson_id' => $lastLesson->lesson_id,
+                'status' => $lastLesson->status,
+                'watch_time' => $lastLesson->watch_time,
+                'last_position' => $lastLesson->last_position,
+                'lesson' => new LessonResource($lastLesson->lesson),
+            ] : null,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

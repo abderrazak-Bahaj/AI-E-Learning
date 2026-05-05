@@ -78,8 +78,29 @@ final class PaypalService implements PaypalServiceInterface
      */
     public function captureOrder(string $orderId): array
     {
-        $response = $this->client()
+        \Illuminate\Support\Facades\Log::info('PayPal capture order request', [
+            'order_id' => $orderId,
+            'endpoint' => "/v2/checkout/orders/{$orderId}/capture",
+            'method' => 'POST',
+            'body' => '{}',
+        ]);
+
+        // PayPal capture endpoint requires an empty JSON object body
+        // We need to bypass asJson() and send raw JSON to avoid double-encoding
+        $response = Http::baseUrl($this->baseUrl)
+            ->timeout(30)
+            ->connectTimeout(10)
+            ->retry(2, 500, throw: false)
+            ->withToken($this->accessToken())
+            ->acceptJson()
+            ->withBody('{}', 'application/json')
             ->post("/v2/checkout/orders/{$orderId}/capture");
+
+        \Illuminate\Support\Facades\Log::info('PayPal capture order response', [
+            'order_id' => $orderId,
+            'status' => $response->status(),
+            'body' => $response->json(),
+        ]);
 
         $this->assertSuccess($response, 'capture order');
 

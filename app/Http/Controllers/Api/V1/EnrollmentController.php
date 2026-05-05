@@ -28,7 +28,7 @@ final class EnrollmentController extends ApiController
     {
         $query = QueryBuilder::for(Enrollment::class)
             ->forStudent($request->user()->id)
-            ->with('course.category', 'certificate');
+            ->with('course.category', 'course.teacher', 'certificate');
 
         return $this->paginatedResponse(
             query: $query,

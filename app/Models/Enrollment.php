@@ -94,6 +94,32 @@ final class Enrollment extends Model
         return $this->status === 'ACTIVE';
     }
 
+    /**
+     * Get progress as a percentage (0-100).
+     */
+    public function getProgressPercentageAttribute(): float
+    {
+        return round($this->progress, 2);
+    }
+
+    /**
+     * Get the last lesson in progress or the first not started lesson.
+     */
+    public function getLastLessonInProgress(): ?LessonProgress
+    {
+        return LessonProgress::query()
+            ->where('lesson_progress.student_id', $this->student_id)
+            ->where('lesson_progress.course_id', $this->course_id)
+            ->whereIn('lesson_progress.status', ['IN_PROGRESS', 'NOT_STARTED'])
+            ->join('lessons', 'lesson_progress.lesson_id', '=', 'lessons.id')
+            ->orderByRaw("CASE WHEN lesson_progress.status = 'IN_PROGRESS' THEN 0 ELSE 1 END")
+            ->orderBy('lesson_progress.updated_at', 'desc')
+            ->orderBy('lessons.order', 'asc')
+            ->select('lesson_progress.*')
+            ->with('lesson')
+            ->first();
+    }
+
     protected function casts(): array
     {
         return [
