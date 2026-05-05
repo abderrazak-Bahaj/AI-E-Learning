@@ -26,7 +26,6 @@ final class CourseController extends ApiController
     #[\Dedoc\Scramble\Attributes\QueryParameter('filter[language]', description: 'Filter by language.', type: 'string', example: 'English')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: title, price, created_at, duration.', type: 'string', example: 'price')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'Sort direction: asc or desc.', type: 'string', example: 'asc')]
-    #[\Dedoc\Scramble\Attributes\QueryParameter('include', description: 'Include relations: category, teacher.', type: 'string', example: 'category,teacher')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15, example: 10)]
     #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1, example: 2)]
     public function index(Request $request): JsonResponse
@@ -46,7 +45,6 @@ final class CourseController extends ApiController
             searchColumns: ['title', 'description'],
             allowedSorts: ['title', 'price', 'created_at', 'duration'],
             allowedFilters: ['status', 'level', 'category_id', 'language'],
-            allowedIncludes: ['category', 'teacher'],
         );
     }
 
@@ -112,18 +110,23 @@ final class CourseController extends ApiController
     /**
      * List the authenticated teacher's courses.
      */
+    #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: title, price, created_at, duration.', type: 'string')]
+    #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'Sort direction: asc or desc.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
     #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function myCourses(Request $request): JsonResponse
     {
-        $courses = Course::query()
+        $query = QueryBuilder::for(Course::class)
             ->byTeacher($request->user()->id)
             ->with('category')
-            ->withCount('lessons', 'enrollments')
-            ->latest()
-            ->paginate(15);
+            ->withCount('lessons', 'enrollments');
 
-        return $this->success(CourseResource::collection($courses));
+        return $this->paginatedResponse(
+            query: $query,
+            request: $request,
+            resourceClass: CourseResource::class,
+            allowedSorts: ['title', 'price', 'created_at', 'duration'],
+        );
     }
 
     /**
@@ -140,7 +143,6 @@ final class CourseController extends ApiController
     #[\Dedoc\Scramble\Attributes\QueryParameter('filter[language]', description: 'Filter by language.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('sort', description: 'Sort field: title, price, created_at, duration.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('order', description: 'asc or desc.', type: 'string', default: 'desc')]
-    #[\Dedoc\Scramble\Attributes\QueryParameter('include', description: 'Include relations: category, teacher.', type: 'string')]
     #[\Dedoc\Scramble\Attributes\QueryParameter('per_page', description: 'Items per page (max 100).', type: 'integer', default: 15)]
     public function byCategory(Request $request, \App\Models\Category $category): JsonResponse
     {
@@ -157,7 +159,6 @@ final class CourseController extends ApiController
             searchColumns: ['title', 'description'],
             allowedSorts: ['title', 'price', 'created_at', 'duration'],
             allowedFilters: ['level', 'language'],
-            allowedIncludes: ['category', 'teacher'],
         );
     }
 }

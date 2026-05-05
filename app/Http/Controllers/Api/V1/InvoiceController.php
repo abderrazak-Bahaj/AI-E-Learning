@@ -28,12 +28,12 @@ final class InvoiceController extends ApiController
     #[\Dedoc\Scramble\Attributes\QueryParameter('page', description: 'Page number.', type: 'integer', default: 1)]
     public function index(Request $request): JsonResponse
     {
-        $query = QueryBuilder::for(Invoice::class)
-            ->with('courses');
+        $query = QueryBuilder::for(Invoice::class);
 
         if ($request->user()->isAdmin()) {
-            $query->with('user');
+            // Admins can see all invoices
         } else {
+            // Students see only their own invoices
             $query->forUser($request->user()->id);
         }
 
