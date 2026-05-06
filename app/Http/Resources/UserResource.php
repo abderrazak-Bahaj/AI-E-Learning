@@ -14,6 +14,8 @@ final class UserResource extends JsonResource
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
+        $role = mb_strtoupper($this->getRoleNames()->first() ?? 'STUDENT');
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -22,13 +24,13 @@ final class UserResource extends JsonResource
             'phone' => $this->phone,
             'address' => $this->address,
             'bio' => $this->bio,
-            'role' => $this->getRoleNames()->first(),
+            'role' => $role,
             'status' => $this->status,
             'email_verified_at' => $this->email_verified_at?->toIso8601String(),
             'last_login_at' => $this->last_login_at?->toIso8601String(),
             'profile' => $this->when(
                 $this->relationLoaded('admin') || $this->relationLoaded('teacher') || $this->relationLoaded('student'),
-                fn () => match ($this->role) {
+                fn () => match (mb_strtolower($role)) {
                     'admin' => new AdminResource($this->whenLoaded('admin')),
                     'teacher' => new TeacherResource($this->whenLoaded('teacher')),
                     'student' => new StudentResource($this->whenLoaded('student')),

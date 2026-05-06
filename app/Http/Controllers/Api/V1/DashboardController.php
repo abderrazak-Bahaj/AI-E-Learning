@@ -22,12 +22,14 @@ final class DashboardController extends ApiController
     /**
      * Admin dashboard statistics.
      *
-     * Returns user counts by role, course stats, revenue, enrollments this month,
-     * and top 5 courses by enrollment. Cached for 5 minutes.
+     * Returns comprehensive dashboard statistics matching the frontend DashboardStatistics interface.
+     * Includes overview metrics, monthly stats, enrollment trends, recent enrollments, and teacher performance.
+     * Cached for 5 minutes.
      */
     public function adminStats(): JsonResponse
     {
         $stats = Cache::remember('dashboard.admin', 300, function (): array {
+            // Overview section - aggregated statistics
             $usersByRole = User::query()
                 ->join('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
                 ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
@@ -36,15 +38,86 @@ final class DashboardController extends ApiController
                 ->groupBy('roles.name')
                 ->pluck('total', 'role');
 
-            $revenue = Payment::query()
+            $totalRevenue = Payment::query()
                 ->where('status', 'COMPLETED')
                 ->sum('amount');
 
-            $enrollmentsThisMonth = Enrollment::query()
-                ->whereMonth('enrolled_at', now()->month)
-                ->whereYear('enrolled_at', now()->year)
-                ->count();
+            $overview = [
+                'total_courses' => Course::query()->count(),
+                'total_students' => (int) $usersByRole->get('student', 0),
+                'total_teachers' => (int) $usersByRole->get('teacher', 0),
+                'total_enrollments' => Enrollment::query()->count(),
+                'total_revenue' => round((float) $totalRevenue, 2),
+            ];
 
+            // Monthly stats - last 6 months of revenue data
+            $monthlyStats = Payment::query()
+                ->where('status', 'COMPLETED')
+                ->where('created_at', '>=', now()->subMonths(6))
+                ->get(['created_at', 'amount'])
+                ->groupBy(fn ($payment) => $payment->created_at->format('Y-m'))
+                ->map(fn ($payments, $monthKey) => [
+                    'month' => now()->createFromFormat('Y-m', $monthKey)->format('M Y'),
+                    'total_invoices' => $payments->count(),
+                    'total_revenue' => round((float) $payments->sum('amount'), 2),
+                ])
+                ->sortKeysDesc()
+                ->values()
+                ->toArray();
+
+            // Enrollment trends - last 6 months of enrollment data
+            $enrollmentTrends = Enrollment::query()
+                ->where('enrolled_at', '>=', now()->subMonths(6))
+                ->get(['enrolled_at'])
+                ->groupBy(fn ($enrollment) => $enrollment->enrolled_at->format('Y-m'))
+                ->map(fn ($enrollments, $monthKey) => [
+                    'month' => now()->createFromFormat('Y-m', $monthKey)->format('M Y'),
+                    'total_enrollments' => $enrollments->count(),
+                ])
+                ->sortKeysDesc()
+                ->values()
+                ->toArray();
+
+            // Recent enrollments - 10 most recent with student and course details
+            $recentEnrollments = Enrollment::query()
+                ->with(['student:id,name,email,avatar', 'course:id,title,category_id'])
+                ->latest('enrolled_at')
+                ->limit(10)
+                ->get()
+                ->map(fn ($enrollment) => [
+                    'id' => $enrollment->id,
+                    'user' => [
+                        'id' => $enrollment->student->id,
+                        'name' => $enrollment->student->name,
+                        'email' => $enrollment->student->email,
+                    ],
+                    'course' => [
+                        'id' => $enrollment->course->id,
+                        'title' => $enrollment->course->title,
+                    ],
+                    'created_at' => $enrollment->enrolled_at->toIso8601String(),
+                ])
+                ->toArray();
+
+            // Teacher performance - top 5 teachers by enrollment count
+            $teacherPerformance = User::query()
+                ->role('teacher')
+                ->withCount(['courses', 'courses as total_enrollments' => function ($query): void {
+                    $query->join('enrollments', 'courses.id', '=', 'enrollments.course_id');
+                }])
+                ->orderByDesc('total_enrollments')
+                ->limit(5)
+                ->get(['id', 'name'])
+                ->map(fn ($teacher) => [
+                    'id' => $teacher->id,
+                    'name' => $teacher->name,
+                    'courses_count' => $teacher->courses_count,
+                    'total_enrollments' => $teacher->total_enrollments,
+                    'courses_avg_rating' => 0, // Placeholder - ratings not implemented yet
+                ])
+                ->toArray();
+
+            // Top courses - top 5 by enrollment count with enrollments_count field
             $topCourses = Course::query()
                 ->withCount('enrollments')
                 ->orderByDesc('enrollments_count')
@@ -53,29 +126,17 @@ final class DashboardController extends ApiController
                 ->map(fn ($c) => [
                     'id' => $c->id,
                     'title' => $c->title,
-                    'enrollments' => $c->enrollments_count,
-                ]);
+                    'enrollments_count' => $c->enrollments_count,
+                ])
+                ->toArray();
 
             return [
-                'users' => [
-                    'total' => User::query()->count(),
-                    'by_role' => $usersByRole,
-                ],
-                'courses' => [
-                    'total' => Course::query()->count(),
-                    'published' => Course::query()->published()->count(),
-                ],
-                'enrollments' => [
-                    'total' => Enrollment::query()->count(),
-                    'this_month' => $enrollmentsThisMonth,
-                    'completed' => Enrollment::query()->completed()->count(),
-                ],
-                'revenue' => [
-                    'total' => round((float) $revenue, 2),
-                    'currency' => 'USD',
-                ],
-                'certificates_issued' => Certificate::query()->generated()->count(),
+                'overview' => $overview,
+                'monthly_stats' => $monthlyStats,
                 'top_courses' => $topCourses,
+                'enrollment_trends' => $enrollmentTrends,
+                'recent_enrollments' => $recentEnrollments,
+                'teacher_performance' => $teacherPerformance,
             ];
         });
 
